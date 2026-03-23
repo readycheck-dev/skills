@@ -10,7 +10,7 @@
     {
       "name": "readycheck",
       "description": "Capture, analyze, and debug app behavior.",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "author": {
         "name": "readycheck-dev",
         "email": "hello@readycheck.dev"
