@@ -1,0 +1,26 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "readycheck",
+  "description": "ReadyCheck-maintained Claude Code marketplace for the packaged ReadyCheck plugin",
+  "owner": {
+    "name": "readycheck-dev",
+    "email": "hello@readycheck.dev"
+  },
+  "plugins": [
+    {
+      "name": "readycheck",
+      "description": "Capture, analyze, and debug app behavior.",
+      "version": "0.1.0",
+      "author": {
+        "name": "readycheck-dev",
+        "email": "hello@readycheck.dev"
+      },
+      "source": {
+        "source": "url",
+        "url": "https://github.com/readycheck-dev/ReadyCheck/releases/download/v0.1.0/readycheck-plugin-0.1.0-macos.zip"
+      },
+      "category": "development",
+      "homepage": "https://readycheck.dev"
+    }
+  ]
+}
