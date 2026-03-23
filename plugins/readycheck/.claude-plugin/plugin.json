@@ -1,0 +1,9 @@
+{
+  "name": "readycheck",
+  "description": "Capture, analyze, and debug app behavior with the packaged ReadyCheck release for macOS",
+  "author": {
+    "name": "readycheck-dev",
+    "url": "https://github.com/readycheck-dev"
+  },
+  "homepage": "https://github.com/readycheck-dev/ReadyCheck"
+}
