@@ -10,14 +10,14 @@
     {
       "name": "readycheck",
       "description": "Capture, analyze, and debug app behavior.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "readycheck-dev",
         "email": "hello@readycheck.dev"
       },
       "source": {
         "source": "url",
-        "url": "https://github.com/readycheck-dev/ReadyCheck/releases/download/v0.1.0/readycheck-plugin-0.1.0-macos.zip"
+        "url": "https://github.com/readycheck-dev/ReadyCheck/releases/download/v0.1.1/readycheck-plugin-0.1.1-macos.zip"
       },
       "category": "development",
       "homepage": "https://readycheck.dev"
