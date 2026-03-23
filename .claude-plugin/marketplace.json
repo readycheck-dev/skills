@@ -10,17 +10,12 @@
     {
       "name": "readycheck",
       "description": "Capture, analyze, and debug app behavior.",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "author": {
         "name": "readycheck-dev",
         "email": "hello@readycheck.dev"
       },
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/readycheck-dev/skills.git",
-        "path": "plugins/readycheck",
-        "ref": "main"
-      },
+      "source": "./plugins/readycheck",
       "category": "development",
       "homepage": "https://readycheck.dev"
     }
