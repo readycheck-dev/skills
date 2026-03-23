@@ -23,6 +23,35 @@ fi
 
 ASSET_URL="${READYCHECK_RELEASE_URL:-$DEFAULT_ASSET_URL}"
 
+download_release_asset() {
+    local asset_url="$1"
+    local zip_path="$2"
+    local github_auth="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+    local github_pattern='^https://github\.com/([^/]+/[^/]+)/releases/download/([^/]+)/([^/]+)$'
+
+    if [[ "$asset_url" =~ $github_pattern ]]; then
+        local repo="${BASH_REMATCH[1]}"
+        local tag="${BASH_REMATCH[2]}"
+        local asset_name="${BASH_REMATCH[3]}"
+
+        if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+            gh release download "$tag" --repo "$repo" --pattern "$asset_name" --output "$zip_path"
+            return 0
+        fi
+    fi
+
+    if [[ -n "$github_auth" ]]; then
+        curl -fL \
+            -H "Authorization: Bearer $github_auth" \
+            -H "Accept: application/octet-stream" \
+            "$asset_url" \
+            -o "$zip_path"
+        return 0
+    fi
+
+    curl -fL "$asset_url" -o "$zip_path"
+}
+
 is_valid_runtime_root() {
     local root="$1"
     [[ -n "$root" && -x "$root/bin/ada" && -f "$root/.claude-plugin/plugin.json" ]]
@@ -79,12 +108,12 @@ STAGING_DIR="$CACHE_ROOT/runtime.staging"
 
 mkdir -p "$CACHE_ROOT"
 
-if ! curl -fL "$ASSET_URL" -o "$ZIP_PATH"; then
+if ! download_release_asset "$ASSET_URL" "$ZIP_PATH"; then
     cat >&2 <<'EOF'
-Unable to download the latest ReadyCheck release package.
+Unable to download the ReadyCheck release package.
 
-Make sure a GitHub release exists with the asset:
-  readycheck-plugin-latest-macos.zip
+For private GitHub repositories, authenticate with `gh auth login`
+or set `GH_TOKEN` / `GITHUB_TOKEN` before running the plugin.
 
 The asset is produced by .github/workflows/release.yml.
 EOF
