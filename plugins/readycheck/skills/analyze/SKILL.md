@@ -413,14 +413,68 @@ If this fails, guide user to use `/check` skill first to capture a session.
 
 ### No Voice Recording
 
-If the session has no voice transcript:
+If the session has no voice transcript (transcription failed or no audio):
+
 1. Inform user: "This session was captured without voice. Switching to trace-first analysis."
-2. Skip Step 2 (extract user observations)
-3. Query all trace events and look for anomalies:
-   - Exceptions or errors
-   - Long gaps (potential hangs)
-   - Unexpected function sequences
-4. Present findings and continue from Step 6
+
+2. **Gather session metadata** using data already obtained in Step 1:
+   - Run: `${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} time-info --format json`
+   - Extract `first_event_ns` and `duration_sec`
+
+3. **Scan for trace anomalies** using these exact commands:
+
+   a. Error/exception scan — search for error-related function substrings:
+      ```bash
+      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 500 --function error
+      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 500 --function exception
+      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 500 --function panic
+      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 500 --function crash
+      ```
+
+   b. Full session event overview:
+      ```bash
+      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 2000
+      ```
+      Look for: long gaps between events (>2s, suggesting hangs), unexpected function sequences, repeated error patterns.
+
+   c. Screenshot at session midpoint for visual context:
+      ```bash
+      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} screenshot --time <midpoint_sec> --output {{$ANALYSIS_SESSION_PATH}}/screenshots/midpoint.png
+      ```
+
+4. **Synthesize observations** into `{{$ANALYSIS_SESSION_PATH}}/user_observations.json` using the standard schema:
+
+   ```json
+   {
+     "session_info": {
+       "first_event_ns": "<from time-info>",
+       "duration_sec": "<from time-info>"
+     },
+     "issues": [
+       {
+         "id": "ISS-001",
+         "type": "unexpected_behavior",
+         "severity": "<inferred: critical for crashes, high for errors, medium for gaps>",
+         "temporal_nature": "<momentary|persistent|progressive>",
+         "time_range_sec": {
+           "phenomenon_visible_by": "<timestamp of the anomaly>",
+           "search_start": "<5 seconds before or 0>",
+           "search_end": "<timestamp of the anomaly>",
+           "anchor_word": "trace-detected"
+         },
+         "description": "<description of the anomaly>",
+         "keywords": ["<function names from trace hits>"],
+         "user_quotes": ["[trace-detected] <anomaly description>"]
+       }
+     ]
+   }
+   ```
+
+   If no anomalies are detected, write an empty issues array and inform the user:
+   > No issues detected from trace-first analysis. The session appears normal. You can describe what you observed and I will investigate specific areas.
+   Then **STOP**.
+
+5. **Continue to Step 3** (Filtering Detected Issues). The normal pipeline (Step 3→4→5→6) takes over, spawning issue-analyzer subagents with correct CLI documentation.
 
 ### No Screen Recording
 

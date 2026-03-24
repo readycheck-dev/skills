@@ -21,6 +21,8 @@ Prove that the reported issue exists in the captured trace and identify its root
 - **Project Source Root**: {{PROJECT_SOURCE_ROOT}}
 - **Developer Feedback**: {{developer_feedback}}
 
+**Synthetic observations:** If `user_quotes` entries are prefixed with `[trace-detected]`, these are synthetic observations from trace anomaly scanning (no voice recording was available). Treat them as trace-derived descriptions rather than verbatim user speech.
+
 If `developer_feedback` is not null, this is a **re-investigation**:
 - If `type` is `"inaccurate"`: the previous analysis was wrong. Use the `feedback` field to guide where to look instead.
 - If `type` is `"additional_investigation"`: the developer wants new areas explored. Focus on the `areas` array.
