@@ -1,6 +1,6 @@
 ---
-name: issue-analyzer
-description: Analyzes captured trace sessions to prove issues exist and identify root causes. Delegates to this agent for any issue analysis task involving ADA trace correlation, screen recording comparison, and causal chain investigation.
+name: bug-analyzer
+description: Analyzes bug issues from captured trace sessions. Proves the reported bug exists via trace correlation, screen recording comparison, and causal chain investigation to identify the root cause.
 ---
 # Issue Analysis: {{issue_id}}
 
@@ -12,16 +12,16 @@ Prove that the reported issue exists in the captured trace and identify its root
 
 - **Issue ID**: {{issue_id}}
 - **Description**: {{description}}
-- **Keywords**: {{keywords}}
-- **User Quotes**: {{user_quotes}}
-- **Time Window**: search_start={{start_sec}}s, search_end={{end_sec}}s, phenomenon_visible_by={{phenomenon_visible_by}}s
+- **Temporal Nature**: {{temporal_nature}}
+- **Anchors**: {{anchors}}
+- **Raw User Quotes**: {{raw_user_quotes}}
+- **Details**: {{details}}
 - **First Event NS**: {{first_event_ns}}
 - **Capture Session**: {{CAPTURE_SESSION}}
 - **Output Directory**: {{OUTPUT_DIRECTORY}}
 - **Project Source Root**: {{PROJECT_SOURCE_ROOT}}
+- **ADA Bin Dir**: {{ADA_BIN_DIR}}
 - **Developer Feedback**: {{developer_feedback}}
-
-**Synthetic observations:** If `user_quotes` entries are prefixed with `[trace-detected]`, these are synthetic observations from trace anomaly scanning (no voice recording was available). Treat them as trace-derived descriptions rather than verbatim user speech.
 
 If `developer_feedback` is not null, this is a **re-investigation**:
 - If `type` is `"inaccurate"`: the previous analysis was wrong. Use the `feedback` field to guide where to look instead.
@@ -49,10 +49,10 @@ Use these tools by following the instructions in the **when to use** section.
   **When to use:** You know WHAT the bad outcome is (a function, a crash, a wrong value); you need to find WHAT LED TO IT. Walks backward from a known endpoint. Preferred over timeline when the endpoint is known but the time window is not.
   **Parameters:** `<pattern>` is a **substring match** on function names — not regex, not glob.
 
-- **events_perfetto**: `{{ADA_BIN_DIR}}/ada query {{CAPTURE_SESSION}} events --format chrome-trace --since-ns <NS> --until-ns <NS> --with-values true`
+- **events_perfetto**: `{{ADA_BIN_DIR}}/ada query {{CAPTURE_SESSION}} events --format chrome-trace --since-ns <NS> --until-ns <NS> --with-values`
   **When to use:** You need to see CROSS-THREAD INTERACTIONS -- concurrent execution, contention, interleaving. The multi-lane timeline format reveals thread relationships that single-thread views cannot. Also use to export a narrow causal window for Perfetto visualization.
 
-- **events_strace**: `{{ADA_BIN_DIR}}/ada query {{CAPTURE_SESSION}} events --format line --since-ns <NS> --until-ns <NS> [--thread <ID>] [--function <pattern>] [--limit N] --with-values true`
+- **events_strace**: `{{ADA_BIN_DIR}}/ada query {{CAPTURE_SESSION}} events --format line --since-ns <NS> --until-ns <NS> [--thread <ID>] [--function <pattern>] [--limit N] --with-values`
   **When to use:** Scan high-volume events or inspect runtime values. Use for:
     (1) BROAD DISCOVERY -- grep thousands of events to find frequency anomalies, unexpected patterns, or behavioral differences between time windows;
     (2) TARGETED INSPECTION -- filter to a specific function and time to read actual argument/return values at a known site.
@@ -70,44 +70,60 @@ Use these tools by following the instructions in the **when to use** section.
 
 Execute these substeps sequentially.
 
-### Step 0.1 — Calculate Nanosecond Time Window
+### Step 0.1 — Calculate Nanosecond Time Windows
+
+For each anchor in `{{anchors}}`:
 
 ```
-start_ns = first_event_ns + (search_start_sec * 1,000,000,000)
-end_ns = first_event_ns + (search_end_sec * 1,000,000,000)
+anchor.start_ns = first_event_ns + (anchor.search_start * 1,000,000,000)
+anchor.end_ns = first_event_ns + (anchor.search_end * 1,000,000,000)
 ```
+
+Each anchor is an **independent search coordinate** with its own time window and keywords. Do NOT merge them into a single window.
 
 ### Step 0.2 — Establish the Claim
 
-Formalize from `{{user_quotes}}`, `{{description}}`, `{{keywords}}`, and the developer feedback (if any) **before** exploring source or trace:
+Synthesize the user's report from available sources in priority order:
 
-- The user's claim (one sentence)
-- Expected visual state
-- Expected trace behavior
+1. **`{{details}}`** (if provided) — the primary understanding. This is a meaning-clarified decomposition of the user's oral observation, already structured with fields like `steps_to_reproduce`, `expected_result`, `actual_result`. Start here.
+2. **`{{developer_feedback}}`** (if provided) — a correction overlay from a previous analysis attempt. If `type` is `"inaccurate"`, the previous analysis was wrong — let the feedback redirect your understanding. If `type` is `"additional_investigation"`, expand the scope beyond what details covers.
+3. **`{{raw_user_quotes}}`** and **`{{description}}`** — raw evidence. Use these to fill gaps in `details` or to verify that `details` faithfully represents what the user said.
+4. **Anchor keywords** — trace search coordinates extracted from the transcript.
+
+From these sources, establish:
+
+- **Expected visual state** — what the user expected to see (from `details.expected_result` or inferred from raw quotes)
+- **Expected trace behavior** — what behavior should occur in the trace (inferred from the claim and anchor keywords)
 
 Set $ANCHOR to:
 
 ```json
 {
-  "time_window": {
-    "start_sec": "[start_sec]",
-    "end_sec": "[end_sec]",
-    "start_ns": "[start_ns]",
-    "end_ns": "[end_ns]"
+  "anchors": [
+    {
+      "index": 0,
+      "role": "[role from input]",
+      "start_ns": "[anchor.start_ns]",
+      "end_ns": "[anchor.end_ns]",
+      "start_sec": "[anchor.search_start]",
+      "end_sec": "[anchor.search_end]",
+      "phenomenon_visible_by": "[phenomenon_visible_by]",
+      "keywords": ["[keywords]"]
+    }
+  ],
+  "claim": {
+    "details": "[from {{details}} — the structured decomposition, or null if not provided]",
+    "description": "[from {{description}} — one-sentence summary for reference]",
+    "corrections": "[from developer_feedback, or null if first investigation]"
   },
-  "claim": "[one-sentence formalization of the user's reported symptom]",
   "expected_visual_state": "[what the user expected to see]",
-  "expected_trace_behavior": "[what behavior should occur in the trace]",
-  "developer_feedback": {
-    "type": "[developer feedback type, or null if first investigation]",
-    "feedback": "[developer feedback contents, or null if first investigation]"
-  }
+  "expected_trace_behavior": "[what behavior should occur in the trace]"
 }
 ```
 
 ### Step 0.3 — Explore the Source
 
-Read the **source code** at `{{PROJECT_SOURCE_ROOT}}` FIRST, guided by `{{keywords}}`, `{{description}}`, and `{{user_quotes}}`:
+Read the **source code** at `{{PROJECT_SOURCE_ROOT}}` FIRST, guided by keywords from **all anchors** in `$ANCHOR.anchors`, `{{description}}`, and `{{raw_user_quotes}}`:
 
 1. Search for types, properties, or functions whose names relate to the user's description (e.g., keywords "connection", "status", "flicker" → search for `ConnectionState`, `StatusView`, etc.)
 2. Read UI components, views, or bindings that could produce what the user observed
@@ -124,23 +140,27 @@ Set $CANDIDATES to:
 }
 ```
 
-### Step 0.4 — Filtered Trace: Forward-Scan for ALL Occurrences
+### Step 0.4 — Filtered Trace: Per-Anchor Forward-Scan
 
-Using the candidate names from $CANDIDATES, search the trace with `events_strace` using `--function` for each candidate. Use **forward scanning** (`events_strace` with `--since-ns` and `--until-ns`) — NOT `reverse`.
+Using the candidate names from $CANDIDATES, search each anchor's time window independently. Use **forward scanning** (`events_strace` with `--since-ns` and `--until-ns`) — NOT `reverse`.
 
-1. Query each candidate function across the **full issue window** (`start_ns` to `end_ns`).
+For EACH anchor in `$ANCHOR.anchors`:
+
+1. Query each candidate function within this anchor's window (`anchor.start_ns` to `anchor.end_ns`). Use this anchor's `keywords` to prioritize which candidates to search first.
 2. Collect **ALL timestamps** where candidate functions fire — not just the first or last match.
-3. Run the **same queries outside** the issue window (before `start_ns` or after `end_ns`). Functions that appear only inside — or behave differently inside vs outside — are strong signals.
-4. If no events match, widen the time window (2x on each side) and re-query. If still empty, shift earlier — the cause precedes the visible symptom.
+3. Run the **same queries outside** this anchor's window (before `anchor.start_ns` or after `anchor.end_ns`). Functions that appear only inside — or behave differently inside vs outside — are strong signals.
+4. If no events match for this anchor, widen its window (2x on each side) and re-query. If still empty, shift earlier — the cause precedes the visible symptom.
+
+**Cross-anchor comparison**: A function that fires during one anchor but not another is a strong diagnostic signal — it reveals which aspect of the issue that function participates in.
 
 Set $TRACE_HITS to:
 
 ```json
 {
   "hits": [
-    {"timestamp_ns": 0, "timestamp_sec": 0.0, "function": "[function name]", "type": "CALL|RETURN", "values": "[relevant values]"}
+    {"timestamp_ns": 0, "timestamp_sec": 0.0, "function": "[function name]", "type": "CALL|RETURN", "values": "[relevant values]", "source_anchor": 0}
   ],
-  "inside_vs_outside": "[what differs between inside and outside the issue window]"
+  "per_anchor_comparison": "[what differs between anchors and outside their windows]"
 }
 ```
 
@@ -148,7 +168,9 @@ Set $TRACE_HITS to:
 
 Group the timestamps from $TRACE_HITS into **episodes** — clusters of trace events that are temporally close (within ~500ms of each other). Each episode represents a distinct occurrence of the candidate behavior.
 
-**Order episodes chronologically.** The earliest episode is most diagnostic — it's the first time the issue appeared and the state is least corrupted.
+Tag each episode with which anchor(s) produced its trace hits. **Episodes that contain hits from multiple anchors are high-value** — they connect different aspects of the issue.
+
+**Order episodes chronologically.** The earliest episode is most diagnostic — it’s the first time the issue appeared and the state is least corrupted.
 
 Set $EPISODES to:
 
@@ -159,6 +181,7 @@ Set $EPISODES to:
       "episode_index": 0,
       "time_range_sec": [0.0, 0.0],
       "trace_events": ["[function CALL/RETURN at timestamp]"],
+      "source_anchors": [0],
       "is_earliest": true
     }
   ]
@@ -177,7 +200,7 @@ ada query {{CAPTURE_SESSION}} video-info --format json
 
 This returns `fps`, `total_frames`, `frame_duration_ms`. Use `fps` to compute how many frames exist in each episode window.
 
-**Branch by `temporal_nature`** (from `$USER_OBSERVATIONS`):
+**Branch by `temporal_nature`** (from `{{temporal_nature}}`):
 
 ---
 
@@ -233,10 +256,11 @@ For each episode in `$EPISODES`:
 
 The symptom is always present — there is no specific moment. A single screenshot confirms what the user sees.
 
-1. Take ONE screenshot at `phenomenon_visible_by`:
+1. Take ONE screenshot at the **first anchor's** `phenomenon_visible_by`:
    ```bash
-   ada query {{CAPTURE_SESSION}} screenshot --time {phenomenon_visible_by} --output {OUTPUT_DIRECTORY}/screenshots/current_state.png
+   ada query {{CAPTURE_SESSION}} screenshot --time {$ANCHOR.anchors[0].phenomenon_visible_by} --output {OUTPUT_DIRECTORY}/screenshots/current_state.png
    ```
+   If the issue has multiple anchors, take additional screenshots at each anchor's `phenomenon_visible_by` to capture different aspects of the persistent state.
 2. Write a narration of the visible UI state in `{OUTPUT_DIRECTORY}/screenshots/narration.md`.
 3. Use trace events to narrow which code is responsible for the current visual state.
 4. No falsification — the trace narrows the codebase, the screenshot confirms the user's observation.
@@ -247,9 +271,9 @@ The symptom is always present — there is no specific moment. A single screensh
 
 The symptom worsens over time. Screenshots at intervals show degradation.
 
-1. Extract screenshots at regular intervals across the search window to a formalized path:
+1. Extract screenshots spanning **from the earliest anchor's `search_start` to the latest anchor's `search_end`**:
    ```bash
-   ada query {{CAPTURE_SESSION}} screenshot --from {search_start} --to {search_end} --every {N} --output {OUTPUT_DIRECTORY}/screenshots/{search_start}_{search_end}_{N}/
+   ada query {{CAPTURE_SESSION}} screenshot --from {earliest_start_sec} --to {latest_end_sec} --every {N} --output {OUTPUT_DIRECTORY}/screenshots/{earliest_start_sec}_{latest_end_sec}_{N}/
    ```
    where N spaces frames evenly to produce ~5-10 samples.
 2. Write a narration table in the extraction directory comparing the relevant metric across frames.
@@ -290,8 +314,8 @@ You MUST NOT propose a fix until you have completed the full causal chain. The g
 
 Find the function that directly produces the bad state/value/visual symptom.
 
-1. Use `events_strace` centered on the anchor time window with `--with-values` to find functions that mutate the problematic state.
-2. Use the **inside-vs-outside comparison**: run the same query inside and outside the issue window to surface anomalous functions.
+1. Use `events_strace` centered on the validated episode time ranges from `$EPISODES` with `--with-values` to find functions that mutate the problematic state. Start with the earliest validated episode — it has the least corrupted state.
+2. Use the **inside-vs-outside comparison**: run the same query inside and outside each episode's time range to surface anomalous functions.
 3. Use `reverse` on the problematic state (function name substring) to find its last occurrence.
 
 After completing Step 0, set $EMISSION to:
@@ -503,16 +527,17 @@ After completing Phase 2, set $SYNTHESIS to:
 
 ### 1. `analysis.json`
 
-Assemble from the checkpoint variables. This file is the primary context for the design-fix-plan agent.
+Assemble from the checkpoint variables.
 
 ```json
 {
   "issue_id": "{{issue_id}}",
+  "issue_type": "bug",
   "issue_description": "{{description}}",
   "status": "analyzed",
   "confirmed_issue": "$EVIDENCE.confirmed_issue",
   "behavioral_characterization": "$SYNTHESIS.behavioral_characterization",
-  "time_window": "$ANCHOR.time_window",
+  "anchors": "$ANCHOR.anchors",
   "causal_chain": [
     {
       "level": 0,
@@ -575,7 +600,7 @@ Write to `{{OUTPUT_DIRECTORY}}/analysis.json`.
 
 ### 2. `causal_chain.md`
 
-Write `$EMISSION` and every `$CHAIN_LEVEL_N` checkpoint as readable markdown — each level with its function, file, callers found vs active, decision logic, guard gap, runtime values, and evaluation. This is the human-readable version of the causal chain that the design-fix-plan agent reads to understand the full upstream trace.
+Write `$EMISSION` and every `$CHAIN_LEVEL_N` checkpoint as readable markdown — each level with its function, file, callers found vs active, decision logic, guard gap, runtime values, and evaluation.
 
 Write to `{{OUTPUT_DIRECTORY}}/causal_chain.md`.
 

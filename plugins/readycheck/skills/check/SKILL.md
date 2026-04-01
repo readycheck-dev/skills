@@ -1,6 +1,6 @@
 ---
 name: check
-description: "Build, run, capture, and analyze any app in one step."
+description: "Check an app, product, or service. Particularly for bugs, performance bottlenecks, and areas for improvement."
 ---
 
 # ReadyCheck: Build, Run, Capture, and Analyze

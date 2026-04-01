@@ -1,9 +1,10 @@
 ---
-name: doctor
-description: ADA system health check - verifies dependencies for capture and analysis
+name: healthcheck
+description: ADA system health check
+disable-model-invocation: true
 ---
 
-# ADA Doctor
+# Healthcheck
 
 ## Purpose
 

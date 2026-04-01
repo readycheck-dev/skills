@@ -1,6 +1,6 @@
 ---
 name: analyze
-description: Analyze ADA session - correlates voice, screen, and trace data for diagnosis
+description: Analyze ADA session
 ---
 
 # Analyze ADA Capture Session
@@ -87,6 +87,13 @@ ADA Bin Dir: {{$ADA_BIN_DIR}}
 
 You MUST go to Step 3: Filtering Detected Issues.
 
+**MUST:**
+You **MUST** proceed to Step 3 whenever the issues array is non-empty.
+
+**MUST NOT:** 
+You **MUST NOT** skip issues based on your own assessment. 
+You **MUST NOT** declare "no actionable issues" when the issues array contains entries.
+
 **CRITICAL: If No Issues Found**:
 
 If `issues` array is empty, you MUST inform the user:
@@ -103,11 +110,10 @@ Then **STOP**.
 - All issues are CRITICAL or HIGH severity — analyze all automatically.
 - Exactly 0 or 1 non-CRITICAL/non-HIGH issues — auto-include alongside CRITICAL/HIGH issues. AskUserQuestion requires >= 2 selectable options; presenting a single issue causes InputValidationError.
 
-**Only present the picker when there are >= 2 non-CRITICAL/non-HIGH issues.**
+**Only present the picker when there are 2-3 non-CRITICAL/non-HIGH issues.**
 
-If 2+ non-CRITICAL/non-HIGH issues were found, present them with AskUserQuestion for selection.
+**If 2-3 non-CRITICAL/non-HIGH issues:** Present them individually with AskUserQuestion:
 
-**Use AskUserQuestion:**
 ```json
 {
   "questions": [{
@@ -124,6 +130,10 @@ If 2+ non-CRITICAL/non-HIGH issues were found, present them with AskUserQuestion
         "description": "{{issues[1].issue.description}}"
       },
       {
+        "label": "{{issues[2].issue.id}} ({{issues[2].issue.severity}})",
+        "description": "{{issues[2].issue.description}}"
+      },
+      {
         "label": "Analyze all",
         "description": "Include all identified issues"
       }
@@ -132,6 +142,30 @@ If 2+ non-CRITICAL/non-HIGH issues were found, present them with AskUserQuestion
 }
 ```
 
+**If 4 and 4+ non-CRITICAL/non-HIGH issues:** Too many for individual options. Present the full list in the question text and offer a bulk choice:
+
+```json
+{
+  "questions": [{
+    "question": "Found {{count}} non-CRITICAL/non-HIGH issues:\n{{numbered_list_of_non_critical_issues}}\nAnalyze all, or specify which to skip?",
+    "header": "Issues",
+    "multiSelect": false,
+    "options": [
+      {
+        "label": "Analyze all",
+        "description": "Include all identified issues"
+      },
+      {
+        "label": "Skip some",
+        "description": "I'll specify which issues to skip in the text field"
+      }
+    ]
+  }]
+}
+```
+
+If the user selects "Skip some", read the issue IDs they mention in the text field and exclude those.
+
 You **MUST** identify if the user response in the other field contains issue analysis.
 If the user response contains issue analysis, set it to **$USER_ANALYSIS**.
 
@@ -139,11 +173,30 @@ If the user response contains issue analysis, set it to **$USER_ANALYSIS**.
 
 Set **$TARGET_ISSUES** to the issue IDs chosen in Step 3 (or all issues if auto-included).
 
+**MUST:**
+You **MUST** spawn the type-specific analyzer subagent for every issue in `$TARGET_ISSUES`.
+You **MUST** wait for all subagent analyses to complete before proceeding to Step 5.
+
+**MUST NOT:**
+You **MUST NOT** attempt to fix, edit, or patch source code directly based on the observation-extractor output.
+You **MUST NOT** skip the analyzer subagents because issues appear "simple" or "straightforward."
+You **MUST NOT** substitute your own code reading for the trace-based analysis that analyzers perform.
+
+The type-specific analyzers perform feasibility assessment, architectural constraint detection, data pipeline tracing, and pattern discovery that cannot be replicated by reading source code alone. Skipping them produces superficial fixes that chase symptoms rather than addressing root design issues.
+
 Run the **Resolve and Spawn** procedure below for `$TARGET_ISSUES`.
 
 ### Resolve and Spawn Procedure
 
-This procedure takes a list of issue IDs and spawns an `issue-analyzer` subagent for each one. It is used in Step 4 (initial analysis) and Step 6 (re-investigation).
+This procedure takes a list of issue IDs and spawns the appropriate type-specific analyzer subagent for each one. It is used in Step 4 (initial analysis) and Step 6 (re-investigation).
+
+**Subagent routing by issue type:**
+
+| Issue Type | Subagent |
+|------------|----------|
+| `bug` | `bug-analyzer` |
+| `improvement` | `improvement-analyzer` |
+| `feature` | `feature-analyzer` |
 
 For EACH issue ID in the target list:
 
@@ -154,27 +207,30 @@ For EACH issue ID in the target list:
 3. Identify the issue entry matching the current issue ID
 4. Extract all parameters from the matched issue entry:
    - `issue_id` ← `id`
+   - `issue_type` ← `type`
    - `description` ← `description`
-   - `start_sec` ← `time_range_sec.search_start`
-   - `end_sec` ← `time_range_sec.search_end`
-   - `phenomenon_visible_by` ← `time_range_sec.phenomenon_visible_by`
+   - `temporal_nature` ← `temporal_nature`
+   - `anchors` ← `anchors` (JSON array)
    - `first_event_ns` ← `session_info.first_event_ns`
-   - `keywords` ← `keywords` (JSON array)
-   - `user_quotes` ← `user_quotes` (JSON array)
+   - `raw_user_quotes` ← `raw_user_quotes` (JSON array)
+   - `details` ← `details` (JSON object)
 5. Set `CAPTURE_SESSION` to the `capture_session_id` field in `{{$ANALYSIS_SESSION_PATH}}/index.json`.
 6. Set `OUTPUT_DIRECTORY` to `{{$ANALYSIS_SESSION_PATH}}/issues/{{issue_id}}`
 7. Set `ADA_BIN_DIR` to `${CLAUDE_PLUGIN_ROOT}/bin`
 8. Set `PROJECT_SOURCE_ROOT` to the project source code root.
 9. Check for `OUTPUT_DIRECTORY/developer_feedback.json`. If it exists, read it and set `developer_feedback` to its contents. Otherwise set `developer_feedback` to `null`.
 
-**Spawn subagent** with the following resolved context:
+**Select subagent** based on `issue_type` using the routing table above.
+
+**Spawn subagent** with the following resolved context in **ONE** message to run them in parallel:
 
 ```
 Issue ID: {{issue_id}}
 Description: {{description}}
-Keywords: {{keywords}}
-User Quotes: {{user_quotes}}
-Time Window: search_start={{start_sec}}s, search_end={{end_sec}}s, phenomenon_visible_by={{phenomenon_visible_by}}s
+Temporal Nature: {{temporal_nature}}
+Anchors: {{anchors}}
+Raw User Quotes: {{raw_user_quotes}}
+Details: {{details}}
 First Event NS: {{first_event_ns}}
 Capture Session: {{CAPTURE_SESSION}}
 Output Directory: {{OUTPUT_DIRECTORY}}
@@ -183,7 +239,7 @@ ADA Bin Dir: {{ADA_BIN_DIR}}
 Developer Feedback: {{developer_feedback}}
 ```
 
-**Spawn all subagents in a single message** to run them in parallel.
+You **MUST** spawn all subagents in a **ONE** message to run them in parallel.
 
 **Collect Results**: Wait for all analyses to complete.
 
@@ -191,62 +247,75 @@ Developer Feedback: {{developer_feedback}}
 
 Read the analysis results from disk: `{{$ANALYSIS_SESSION_PATH}}/issues/{{issue.id}}/analysis.json` for each analyzed issue.
 
-Combine all analysis results into a summary table for the user.
+Combine all analysis results into a summary table for the user. The table format adapts to the issue type.
 
 **Output Format:**
 
 ```markdown
 ## Analysis Summary
 
-| Issue | Severity | Description | Root Cause | Convergence |
-|-------|----------|-------------|------------|-------------|
-| ISS-001 | [issue_001_severity] | [issue_001_description] | [issue_001_root_cause_summary] | [issue_001_convergence] |
-| ISS-002 | [issue_002_severity] | [issue_002_description] | [issue_002_root_cause_summary] | [issue_002_convergence] |
+| # | Type | Severity | Description | Finding |
+|-------|------|----------|-------------|---------|
+| ISS-001 | [type] | [severity] | [description] | [finding_summary] |
+| ISS-002 | [type] | [severity] | [description] | [finding_summary] |
 | ... | ... | ... | ... | ... |
 
-<!-- Column bindings (from issue-analysis JSON output):
-  - "Issue"        <- issue_id
-  - "Severity"     <- from the issue's severity in Step 2 output
-  - "Description"  <- issue_description
-  - "Root Cause"   <- root_cause.summary (use "not identified" if root_cause is null)
-  - "Convergence"  <- convergence
-  Do NOT rename these columns. Use the exact JSON field values without rephrasing.
+<!-- Column bindings:
+  - "Issue"       <- issue_id
+  - "Type"        <- issue_type (bug, improvement, feature)
+  - "Severity"    <- from the issue's severity in Step 2 output
+  - "Description" <- issue_description
+  - "Finding"     <- type-specific summary:
+      bug:         defect.summary (or "not identified")
+      improvement: current_behavior
+      feature:     feature_summary
 -->
 
 ### Detailed Findings
 
-<!-- You MUST present each detailed finding with the following format:
+<!-- Present each finding using the appropriate template for its type: -->
 
-#### ISS-XXX: [issue_XXX_description]
+<!-- FOR BUG ISSUES: -->
 
-> User: [issue_XXX_user_quote]
+#### ISS-XXX: [description]
 
-**Confirmed Issue:**
+> User: [user_quote]
 
-[issue_XXX_confirmed_issue]
+**Confirmed Issue:** [confirmed_issue]
 
-**Root Cause:**
+**Root Cause:** [defect_summary] (confidence: [confidence], chain depth: [chain_depth], fix level: [fix_level])
 
-[defect_summary] (confidence: [defect_confidence], chain depth: [chain_depth], fix level: [fix_level])
+**Causal Chain:** [rendered from causal_chain]
 
-**Causal Chain:**
+**Fix Strategy:** [fix_strategy_summary]
 
-[rendered from causal_chain — each level with function, file, role, and evidence]
+**Behavioral Characterization:** [behavioral_characterization]
 
-**Fix Strategy:**
+<!-- FOR IMPROVEMENT ISSUES: -->
 
-[fix_strategy_summary]
+#### ISS-XXX: [description]
 
-**Behavioral Characterization:**
+> User: [user_quote]
 
-[behavioral_characterization]
+**Current Behavior:** [scene.current_behavior]
 
-**Evidence Convergence:**
+**Affected Components:** [scene.components list with files]
 
-[convergence] — [which truth sources agree and what they show]
--->
+**Modifications:** [modifications with classification and fidelity check]
 
-...
+<!-- FOR FEATURE ISSUES: -->
+
+#### ISS-XXX: [description]
+
+> User: [user_quote]
+
+**Feature Summary:** [claim.user_intent.description]
+
+**Integration:** [integration.capabilities with classification]
+
+**Existing Patterns:** [patterns to follow]
+
+**Complexity:** [overall complexity assessment]
 ```
 
 ## MANDATORY: Step 6. Developer Review
@@ -254,6 +323,7 @@ Combine all analysis results into a summary table for the user.
 Present the merged findings from Step 5 and ask the developer to confirm or redirect.
 
 **Use AskUserQuestion:**
+
 ```json
 {
   "questions": [
@@ -280,7 +350,9 @@ Present the merged findings from Step 5 and ask the developer to confirm or redi
 }
 ```
 
-**If "All confirmed":** Continue to Step 7 (Plan).
+**If "All confirmed":**
+
+You **MUST** go to Step 7 (Plan).
 
 **If "Correct but incomplete":**
 
@@ -303,7 +375,7 @@ Set **$TARGET_ISSUES** to the issue IDs the developer mentioned for additional i
 
 Re-run the **Resolve and Spawn** procedure from Step 4 for `$TARGET_ISSUES`.
 
-Then collect results, go back to Step 5 to merge the new findings with existing ones, then repeat Step 6.
+Then you **MUST** collect results, go back to Step 5 to merge the new findings with existing ones, then repeat Step 6.
 
 **If "Some are inaccurate":**
 
@@ -329,38 +401,35 @@ Set **$TARGET_ISSUES** to the issue IDs the developer flagged as inaccurate.
 
 Re-run the **Resolve and Spawn** procedure from Step 4 for `$TARGET_ISSUES`.
 
-Collect results, go back to Step 5 to merge the new findings with existing ones, then repeat Step 6.
+Then you **MUST** collect results, go back to Step 5 to merge the new findings with existing ones, then repeat Step 6.
 
 ## MANDATORY: Step 7. Plan
 
-**Depth validation:** Before proceeding, check each issue's `chain_depth` from the analysis response. If any issue has `chain_depth: 0` (emission site only) or `fix_level: "emission"`, warn the developer:
+**Depth validation (bug issues only):** Before proceeding, check each bug issue's `chain_depth` from the analysis response. If any bug issue has `chain_depth: 0` (emission site only) or `fix_level: "emission"`, warn the developer:
 
 > ⚠️ Issue [issue_id] analysis stopped at the emission site (chain depth: 0). The fix suppresses the symptom rather than preventing the incorrect code path. Consider re-investigating to trace upstream.
 
-If the developer confirms to proceed anyway, continue. Otherwise, re-invoke issue-analysis with feedback.
+If the developer confirms to proceed anyway, continue. Otherwise, re-invoke the analyzer with feedback.
 
-Call **EnterPlanMode** to create a plan for fixing the issues.
+Call **EnterPlanMode** to create a plan for the issues.
 
-You **MUST** spawn subagent with the following invocation to design the fix plan.
+Yout **MUST** spawn a single planner subagent with ALL issues with the following prompt:
 
 Task(
   subagent_type: "general-purpose",
   run_in_background: false,
   prompt:
   """
-  You MUST read and follow the instructions in: ${ADA_ANALYZE_SKILL_PROMPTS_DIR}/design-fix-plan.md
+  You MUST read and follow the instructions in: ${ADA_ANALYZE_SKILL_PROMPTS_DIR}/plan.md
 
   ## Analysis Session
 
   Set $ANALYSIS_SESSION_PATH to {{$ANALYSIS_SESSION_PATH}}
-  You MUST read ALL artifacts for each issue in this directory:
-  - analysis.json (defect, causal chain, state mutation map, fix strategy)
-  - causal_chain.md (full upstream trace from emission site to root cause)
-  - traces/state_emissions.txt (every state-emitting path with guards — your validation checklist)
+  You MUST read the analysis artifacts for ALL issues in the directory — bugs, improvements, and features together.
 
   ## Source Code
 
-  You MUST read the source code at the root cause sites identified in the analysis before designing the fix. You MUST also search for ALL call sites of the defective function. The project is at: {{$PROJECT_PATH}}
+  You MUST read the source code at the sites identified in the analysis. The project is at: {{$PROJECT_PATH}}
 
   ## Plan Output
 
@@ -373,7 +442,22 @@ You **MUST** evaluate the variable wrapped by `{{}}` like `{{$VAR}}` or `{{var}}
 
 ### Handle Plan Result
 
-You MUST load the plan from `plan_file_path` and write the plan to the Claude Code session plan file. Call **ExitPlanMode** to make the user review the plan.
+Read the plan file at `plan_file_path` and write it to the Claude Code session plan file.
+Then call **ExitPlanMode**.
+Once the plan has been approved, you **MUST** execute the plan.
+
+#### Plan Content Integrity Rules
+
+When transferring the planner's output to the session plan file, you **MUST NOT**:
+
+1. **MUST NOT summarize** — do not reduce multi-step analysis into bullet points or one-liners.
+2. **MUST NOT drop sections** — every section the planner wrote (architecture diagrams, state traces, before/after trees, algorithm pseudocode, validation traces, API verification) must appear in the session plan file.
+3. **MUST NOT condense** — do not merge separate steps, issues, or design blocks into combined paragraphs.
+4. **MUST NOT paraphrase** — do not restate the planner's content in different words. Use the planner's exact wording.
+5. **MUST NOT reformat structure** — preserve the planner's heading hierarchy, code blocks, tables, and numbered lists as-is.
+6. **MUST NOT inject commentary** — do not add your own summary, introduction, or "remaining changes" wrapper around the plan content.
+
+The plan file produced by the planner is the **single source of truth**. Copy it faithfully. If a user-installed skill needs to optimize the plan, that skill will do so on its own terms — your job is to preserve the planner's output intact.
 
 ### Handle Plan Rejection
 
@@ -399,7 +483,7 @@ Task(
   resume: {{$PLAN_TASK_AGENT_ID}}
 )
 
-Write the revised plan to the plan file and call **ExitPlanMode** again.
+Read the revised plan file and write it to the session plan file. The **Plan Content Integrity Rules** above apply identically. Then call **ExitPlanMode** again.
 
 ## CRITICAL: Error Handling
 
@@ -415,66 +499,12 @@ If this fails, guide user to use `/check` skill first to capture a session.
 
 If the session has no voice transcript (transcription failed or no audio):
 
-1. Inform user: "This session was captured without voice. Switching to trace-first analysis."
+Inform user:
+> No voice recording was found in this session. Without voice observations, I cannot identify issues to analyze.
+>
+> Please re-capture the session with voice recording enabled, or describe what you observed so I can investigate.
 
-2. **Gather session metadata** using data already obtained in Step 1:
-   - Run: `${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} time-info --format json`
-   - Extract `first_event_ns` and `duration_sec`
-
-3. **Scan for trace anomalies** using these exact commands:
-
-   a. Error/exception scan — search for error-related function substrings:
-      ```bash
-      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 500 --function error
-      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 500 --function exception
-      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 500 --function panic
-      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 500 --function crash
-      ```
-
-   b. Full session event overview:
-      ```bash
-      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} events --format line --with-values true --limit 2000
-      ```
-      Look for: long gaps between events (>2s, suggesting hangs), unexpected function sequences, repeated error patterns.
-
-   c. Screenshot at session midpoint for visual context:
-      ```bash
-      ${ADA_BIN_DIR}/ada query {{$CAPTURE_SESSION}} screenshot --time <midpoint_sec> --output {{$ANALYSIS_SESSION_PATH}}/screenshots/midpoint.png
-      ```
-
-4. **Synthesize observations** into `{{$ANALYSIS_SESSION_PATH}}/user_observations.json` using the standard schema:
-
-   ```json
-   {
-     "session_info": {
-       "first_event_ns": "<from time-info>",
-       "duration_sec": "<from time-info>"
-     },
-     "issues": [
-       {
-         "id": "ISS-001",
-         "type": "unexpected_behavior",
-         "severity": "<inferred: critical for crashes, high for errors, medium for gaps>",
-         "temporal_nature": "<momentary|persistent|progressive>",
-         "time_range_sec": {
-           "phenomenon_visible_by": "<timestamp of the anomaly>",
-           "search_start": "<5 seconds before or 0>",
-           "search_end": "<timestamp of the anomaly>",
-           "anchor_word": "trace-detected"
-         },
-         "description": "<description of the anomaly>",
-         "keywords": ["<function names from trace hits>"],
-         "user_quotes": ["[trace-detected] <anomaly description>"]
-       }
-     ]
-   }
-   ```
-
-   If no anomalies are detected, write an empty issues array and inform the user:
-   > No issues detected from trace-first analysis. The session appears normal. You can describe what you observed and I will investigate specific areas.
-   Then **STOP**.
-
-5. **Continue to Step 3** (Filtering Detected Issues). The normal pipeline (Step 3→4→5→6) takes over, spawning issue-analyzer subagents with correct CLI documentation.
+Then **STOP** and wait for user input.
 
 ### No Screen Recording
 
