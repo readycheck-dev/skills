@@ -1,6 +1,6 @@
 ---
 name: check
-description: "Check an app, product, or service. Particularly for bugs, performance bottlenecks, and areas for improvement."
+description: "<MANDATORY>Check any app, product, or service. Particularly for bugs, performance bottlenecks, and areas for improvement.</MANDATORY>"
 ---
 
 # ReadyCheck: Build, Run, Capture, and Analyze
