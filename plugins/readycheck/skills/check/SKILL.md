@@ -56,7 +56,7 @@ You MAY use the app's build system to build the app.
 
 ### MANDATORY: Step 4. Start Capture (Background)
 
-Start capturing with `run_in_background: true`:
+Start capturing with `run_in_background: true` and title "Start ReadyCheck capture session":
 
 <example>
 Bash(
@@ -112,6 +112,64 @@ Skill(skill: "analyze")
 </example>
 
 Follow the analyze skill workflow from there.
+
+### MANDATORY: Step 7. Post-Fix Verification Capture
+
+After the plan has been executed and code changes are applied:
+
+1. **Re-build** the application using the same build process from Step 3.
+
+2. **Start a new capture session** using the same binary path and arguments as Step 4:
+
+<example>
+Bash(
+  command: "${ADA_BIN_DIR}/ada capture start <binary_path>",
+  run_in_background: true
+)
+</example>
+
+Save the returned task ID as **$POST_FIX_CAPTURE_TASK_ID**.
+
+3. **Report to user:**
+
+> **Post-fix verification capture running**
+>
+> Please reproduce the same workflow you performed earlier.
+> This allows me to verify the fix worked AND that nothing else broke.
+> Quit the app when done.
+
+4. Wait for the user to finish. Collect the post-fix session when the app quits. Set **$POST_FIX_SESSION**.
+
+### MANDATORY: Step 8. Regression Verification
+
+Read the plan file generated during Step 6's analysis workflow. Parse the `## Modification Impact Analysis` section.
+
+**8a. Symptom Resolution Check:**
+
+For each issue in the plan's `## Issues` table, verify the original symptom is resolved in the post-fix capture. Use screenshots and trace queries against `$POST_FIX_SESSION` to confirm.
+
+**8b. Modification Impact Verification:**
+
+For each row in the `## Modification Impact Analysis` table:
+
+1. Re-run the same trace queries from the Evidence column against `$POST_FIX_SESSION`
+2. Compare: does the runtime behavior match the expected post-fix behavior?
+3. If the verdict was SAFE but the post-fix behavior differs unexpectedly from the baseline, flag as a potential regression
+
+**Report to user:**
+
+> **Verification Results**
+>
+> **Symptom Resolution:**
+> - [PASS/FAIL]: [description per issue]
+>
+> **Modification Impact:**
+> - [Modification Point 1]: [PASS — behavior matches expectations / FAIL — unexpected change detected]
+> - [Modification Point 2]: [PASS/FAIL]
+>
+> **Overall:** [All checks passed / N issues detected]
+
+If any check fails, show the specific trace query results that differ from the baseline and suggest investigation steps.
 
 ## Error Handling
 
