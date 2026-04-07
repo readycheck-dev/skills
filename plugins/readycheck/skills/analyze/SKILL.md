@@ -699,10 +699,14 @@ Once the plan has been approved, you **MUST** execute the plan with the principl
 
 ### Execute the Plan
 
+**MUST:**
 You **MUST** analyze the dependencies for each task in the session plan file to execute.
 You **MUST** spawn subagents to execute each task.
 You **MUST** ask each subagents to mandatorily read the session plan file before it begins its task.
+
+**MUST NOT:**
 You **MUST NOT** invoke `/readycheck:check` skill once the plan execution completed.
+You **MUST NOT** launch a post-fix verification capture session once the plan execution completed.
 
 ### Handle Plan Rejection
 

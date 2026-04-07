@@ -387,7 +387,8 @@ You **MUST** write `$DESIGN_TIME_CHECKLIST` as JSON to `{{ANALYSIS_SESSION_PATH}
 ## Tests
 
 <!-- Map each success criterion from analysis.json to a verification step.
-     The plan-designer decides HOW to verify each criterion based on -->
+     The plan-designer decides HOW to verify each criterion based on.
+     You **MUST** not trigger a post-fix verification capture session to test. -->
 
 ## Tasks
 
