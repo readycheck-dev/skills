@@ -78,17 +78,9 @@ Set **$NARRATION** to the narration text.
 
 **2. UI element keyword list (OCR):**
 
-Run platform-native OCR on the sampled screenshots with deduplication and confidence filtering, writing per-file results:
+Command: {{ADA_BIN_DIR}}/ada query {{CAPTURE_SESSION}} screenshot ocr $SAMPLED_SCREENSHOTS --dedup --min-confidence 0.5 -f json
 
-Command: {{ADA_BIN_DIR}}/ada query {{CAPTURE_SESSION}} screenshot ocr $SAMPLED_SCREENSHOTS --format json --output-dir {{OUTPUT_DIRECTORY}}/ocr --dedup --min-confidence 0.5
-
-The command prints a manifest to stdout listing per-file OCR result paths. Read each per-file `.ocr.json` via the Read tool to collect OCR text.
-
-Select strings verbatim from the OCR results. Include button labels, section headers, text field contents, URLs, addresses, IDs, status text, picker values, toggle labels, tab names. Output as a comma-separated keyword list with exact letter case preserved.
-
-**MUST:** Do NOT paraphrase — use the exact strings from the OCR output.
-
-Set **$OCR_KEYWORDS** to the comma-separated keyword list.
+Set **$OCR_KEYWORDS** to the `keywords` array from the JSON output, joined with commas. Use verbatim — do NOT re-select, re-filter, or re-format.
 
 **3. Trace keywords:**
 

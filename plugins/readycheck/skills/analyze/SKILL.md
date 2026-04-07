@@ -631,19 +631,23 @@ Resolve the following variables:
 1. Set `$CAPTURE_SESSION` to the `capture_session_id` field in `{{$ANALYSIS_SESSION_PATH}}/index.json`.
 2. Set `$ADA_BIN_DIR` to `${READYCHECK_PLUGIN_ROOT}/bin`.
 
-**Spawn** the `plan-designer` subagent with the following resolved context:
+**MUST NOT:**
+1. You **MUST NOT** update the sesison plan file directly to fix these issues.
+2. You **MUST NOT** update the sesison plan file with subagents other than `plan-designer` to fix these issues.
+3. You **MUST NOT** set `run_in_background` to `true` when spawning `plan-designer` subagent.
 
-```
-Analysis Session Path: {{$ANALYSIS_SESSION_PATH}}
-Capture Session: {{$CAPTURE_SESSION}}
-Project Source Root: {{$PROJECT_PATH}}
-ADA Bin Dir: {{$ADA_BIN_DIR}}
-Clarifications: {{$CLARIFICATIONS}}
-```
+**MUST:**
+1. You **MUST** spawn the `plan-designer` subagent with the following resolved context.
+  ```
+  Analysis Session Path: {{$ANALYSIS_SESSION_PATH}}
+  Capture Session: {{$CAPTURE_SESSION}}
+  Project Source Root: {{$PROJECT_PATH}}
+  ADA Bin Dir: {{$ADA_BIN_DIR}}
+  Clarifications: {{$CLARIFICATIONS}}
+  ```
+2. You **MUST** set the name of this subagent to `plan-designer`.
+3. You **MUST** set `run_in_background` to `false` when spawning this subagent.
 
-You **MUST** set the name of this subagent to `plan-designer`.
-You **MUST** set `run_in_background` to `false` when spawning this subagent.
-You **MUST NOT** set `run_in_background` to `true` when spawning this subagent.
 Set **$PLAN_DESIGNER_AGENT_ID** to the returned agent ID.
 
 **CRITICAL:** `$PLAN_DESIGNER_AGENT_ID` is the **agent ID** (hex string like `aa54907fe68efebdb`), NOT the name `plan-designer`. SendMessage resumption requires the agent ID, not the name.
@@ -686,12 +690,12 @@ Call **EnterPlanMode**. Write the plan content into the Claude Code session plan
 
 When transferring the planner's output to the session plan file, you **MUST NOT**:
 
-1. **MUST NOT summarize** — do not reduce multi-step analysis into bullet points or one-liners.
-2. **MUST NOT drop sections** — every section the planner wrote (architecture diagrams, before/after trees, algorithm pseudocode) must appear in the session plan file.
-3. **MUST NOT condense** — do not merge separate steps, issues, or design blocks into combined paragraphs.
-4. **MUST NOT paraphrase** — do not restate the planner's content in different words. Use the planner's exact wording.
-5. **MUST NOT reformat structure** — preserve the planner's heading hierarchy, code blocks, tables, and numbered lists as-is.
-6. **MUST NOT inject commentary** — do not add your own summary, introduction, or "remaining changes" wrapper around the plan content.
+1. You **MUST NOT summarize** — do not reduce multi-step analysis into bullet points or one-liners.
+2. You **MUST NOT drop sections** — every section the planner wrote (architecture diagrams, before/after trees, algorithm pseudocode) must appear in the session plan file.
+3. You **MUST NOT condense** — do not merge separate steps, issues, or design blocks into combined paragraphs.
+4. You **MUST NOT paraphrase** — do not restate the planner's content in different words. Use the planner's exact wording.
+5. You **MUST NOT reformat structure** — preserve the planner's heading hierarchy, code blocks, tables, and numbered lists as-is.
+6. You **MUST NOT inject commentary** — do not add your own summary, introduction, or "remaining changes" wrapper around the plan content
 
 The plan file produced by the planner is the **single source of truth**. Copy it faithfully.
 
