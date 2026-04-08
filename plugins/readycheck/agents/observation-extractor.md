@@ -66,23 +66,15 @@ Select up to 8 evenly spaced screenshots from $SCREENSHOTS (first frame, last fr
 
 Set **$SAMPLED_SCREENSHOTS** to the selected file paths.
 
-Produce three outputs, then compose $PROMPT from them.
+Produce two outputs, then compose $PROMPT from them.
 
-**1. Sequential narration of visual state:**
-
-Read each screenshot in $SAMPLED_SCREENSHOTS one by one via the Read tool. After reading all of them, describe what is VISIBLE on screen — which app windows are open, which panels are shown, what controls and labels are present. Write 1-2 sentences.
-
-**MUST:** Describe the visual state of the UI, not the user's spoken observations or intentions.
-
-Set **$NARRATION** to the narration text.
-
-**2. UI element keyword list (OCR):**
+**1. UI element keyword list (OCR):**
 
 Command: {{ADA_BIN_DIR}}/ada query {{CAPTURE_SESSION}} screenshot ocr $SAMPLED_SCREENSHOTS --dedup --min-confidence 0.5 -f json
 
 Set **$OCR_KEYWORDS** to the `keywords` array from the JSON output, joined with commas. Use verbatim — do NOT re-select, re-filter, or re-format.
 
-**3. Trace keywords:**
+**2. Trace keywords:**
 
 You **MUST** execute the following command:
 
@@ -93,7 +85,7 @@ Set **$TRACE_KEYWORDS** to the output. Use verbatim — one word per line, join 
 **Compose $PROMPT:**
 
 ```
-$NARRATION. $OCR_KEYWORDS. $TRACE_KEYWORDS.
+$OCR_KEYWORDS. $TRACE_KEYWORDS.
 ```
 
 Keep under 100 words total. No preamble sentences. No markdown headers.
@@ -186,6 +178,7 @@ Set $NARRATIVE to a free-form understanding of what the user communicated, in na
 
 - `subject`: a noun-phrase identifying the ambiguous element
 - `tension`: describes the fork in interpretation without choosing a side. State what competing readings the user's words support. Do NOT resolve the tension — that is the user's decision.
+- `concern`: the type of the concern.
 - `segment_ids`: the segments whose content creates the ambiguity
 - `relevant_quotes`: exact transcript phrases (from `text`, not `normalized_text`) that a user would need to see to understand why this is ambiguous
 
@@ -195,6 +188,7 @@ An ambiguity exists when the user's words support two or more structurally diffe
 
 **MUST NOT** flag:
 - YOU **MUST NOT** flag wrods describing the sympton of the issues.
+- YOU **MUST NOT** flag cause of the sympton of the issues.
 - YOU **MUST NOT** flag unspecified details that have obvious defaults.
 - YOU **MUST NOT** flag wording that is informal but unambiguous in context.
 - YOU **MUST NOT** flag preferences that can be deferred to implementation time without architectural impact.
@@ -317,6 +311,7 @@ Set $CONCERNS to:
       "type": "bug|improvement|feature",
       "description": "[one-sentence summary]",
       "raw_user_quotes": ["[exact phrases from transcript]"],
+      "concern": "[the concern of this ambiguity]",
       "details": {
         "[type-specific fields per vocabulary above]": "..."
       },
@@ -342,7 +337,9 @@ Set $CONCERNS to:
 
 **Attach ambiguities to concerns:**
 
-For each ambiguity in `$NARRATIVE.ambiguities`, check if its `segment_ids` overlap with any concern's discourse segments (via `$DISCOURSES`). If so, attach the ambiguity to the relevant concern(s). An ambiguity may apply to multiple concerns. If an ambiguity's segments do not overlap with any issue discourse, it becomes an unattached ambiguity.
+For each ambiguity in `$NARRATIVE.ambiguities`, check if its `segment_ids` overlap with any concern's discourse segments (via `$DISCOURSES`).
+If so, attach the ambiguity to the relevant concern(s). An ambiguity may apply to multiple concerns.
+If an ambiguity's segments do not overlap with any issue discourse, it becomes an unattached ambiguity.
 
 ## Step 6. Cross-Check with Keyword Scan
 
@@ -578,6 +575,7 @@ Assemble from $TIME_INFO and $ANCHORED_ISSUES. Link the companion files for down
       "ambiguities": [
         {
           "subject": "...",
+          "concern": "...",
           "tension": "...",
           "relevant_quotes": ["..."]
         }
@@ -587,6 +585,7 @@ Assemble from $TIME_INFO and $ANCHORED_ISSUES. Link the companion files for down
   "unattached_ambiguities": [
     {
       "subject": "...",
+      "concern": "...",
       "tension": "...",
       "segment_ids": ["SEG-XXX"],
       "relevant_quotes": ["..."]
