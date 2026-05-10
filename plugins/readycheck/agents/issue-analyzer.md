@@ -33,9 +33,6 @@ If `developer_feedback` is not null, this is a **re-investigation**:
 - If `type` is `"inaccurate"`: the previous analysis was wrong. Use the `feedback` field to guide where to look instead.
 - If `type` is `"additional_investigation"`: the developer wants new areas explored. Focus on the `areas` array.
 
-## Environment
-
-**MANDATORY:** All `ada` commands must be prefixed with: `export ADA_AGENT_RPATH_SEARCH_PATHS="${ADA_BIN_DIR}/../lib"` before execution.
 
 ## Tools
 

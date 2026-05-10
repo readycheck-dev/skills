@@ -14,13 +14,16 @@ Build and launch an application with ADA tracing enabled, capture execution trac
 Before running any ada command, resolve the packaged ReadyCheck release and set the environment:
 
 <example>
-READYCHECK_PLUGIN_ROOT="$(${CLAUDE_PLUGIN_ROOT}/scripts/ensure_release.sh)"
-export ADA_BIN_DIR="${READYCHECK_PLUGIN_ROOT}/bin"
-export ADA_LIB_DIR="${READYCHECK_PLUGIN_ROOT}/lib"
-export ADA_AGENT_RPATH_SEARCH_PATHS="${ADA_LIB_DIR}"
+Bash(
+  command: READYCHECK_PLUGIN_ROOT="$(${CLAUDE_PLUGIN_ROOT}/scripts/ensure_release.sh)",
+  background: true
+)
 </example>
 
-**IMPORTANT**: Always use the full path `${ADA_BIN_DIR}/ada` for commands to avoid conflicts with other `ada` binaries in PATH.
+Set variable **$ADA_BIN_DIR** to "${READYCHECK_PLUGIN_ROOT}/bin"
+Set variable **$ADA_LIB_DIR** to "${READYCHECK_PLUGIN_ROOT}/lib"
+
+**IMPORTANT**: Always use the full path `{{$ADA_BIN_DIR}}/ada` for commands to avoid conflicts with other `ada` binaries in PATH.
 `ensure_release.sh` automatically prefers a valid local `dist/` runtime when the plugin is being tested from a ReadyCheck checkout.
 
 ## Workflow
@@ -60,13 +63,13 @@ Start capturing with `background: true` and title "Start ReadyCheck capture sess
 
 <example>
 Bash(
-  command: export ADA_AGENT_RPATH_SEARCH_PATHS="${ADA_LIB_DIR}" "${ADA_BIN_DIR}/ada capture start <binary_path>"
-  ,
+  command: export ADA_AGENT_RPATH_SEARCH_PATHS="{{$ADA_LIB_DIR}}" "${{ADA_BIN_DIR}}/ada capture start <binary_path>",
   background: true
 )
 </example>
 
-Save the returned task ID as **$CAPTURE_TASK_ID**.
+You **MUST** substitute **$ADA_LIB_DIR** and **$ADA_BIN_DIR** in the invocation command with the variable you got in **Step 1. Preflight Check**.
+You **MUST** save the returned task ID as **$CAPTURE_TASK_ID**.
 
 **Report to user:**
 
@@ -102,6 +105,9 @@ Parse the output for the session directory path.
 - Continue to Step 6
 
 **If capture failed:**
+
+You **MUST** execute this ONLY when the capture is failed.
+You **MUST NOT** execute this until the capture is failed.
 
 1. Show the error message to the user.
 

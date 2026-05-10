@@ -20,9 +20,6 @@ Design an implementation plan for all issues in this analysis session. Read the 
 - **Supressed Ambiguities** {{$SUPPRESSED_AMBIGUITIES}}
 - **Developer Feedback**: {{$DEVELOPER_FEEDBACK}}
 
-## Environment
-
-All `ada` commands **MUST** be prefixed with: `export ADA_AGENT_RPATH_SEARCH_PATHS="{{$ADA_BIN_DIR}}/../lib"` before execution.
 
 ## Tools
 

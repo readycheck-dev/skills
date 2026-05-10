@@ -18,7 +18,6 @@ Check system health and dependencies for ADA capture and analysis workflows. Cre
 READYCHECK_PLUGIN_ROOT="$(${CLAUDE_PLUGIN_ROOT}/scripts/ensure_release.sh)"
 export ADA_BIN_DIR="${READYCHECK_PLUGIN_ROOT}/bin"
 export ADA_LIB_DIR="${READYCHECK_PLUGIN_ROOT}/lib"
-export ADA_AGENT_RPATH_SEARCH_PATHS="${ADA_LIB_DIR}"
 ```
 
 `ensure_release.sh` automatically prefers a valid local `dist/` runtime when the plugin is being tested from a ReadyCheck checkout.
@@ -99,12 +98,6 @@ If issues are found:
 1. Show which components are affected (capture vs analysis)
 2. Provide exact fix commands
 3. Suggest re-running doctor after fixes
-
-#### Common Fixes
-
-- **Frida agent not found**: Set `ADA_AGENT_RPATH_SEARCH_PATHS` environment variable
-- **Whisper not found**: Run `./utils/init_media_tools.sh` (development) or reinstall the plugin (production)
-- **FFmpeg not found**: Run `./utils/init_media_tools.sh` (development) or reinstall the plugin (production)
 
 ## MANDATORY: Step 2. Resolve Current Claude Code Session
 

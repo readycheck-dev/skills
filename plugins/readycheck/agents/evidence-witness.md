@@ -34,9 +34,6 @@ This blinding is deliberate. Past audits showed that when the expected outcome (
 
 You will not receive `ISSUE_DESCRIPTION`, `ISSUE_RAW_USER_QUOTES`, `ISSUE_DETAILS`, `INTERVAL_PURPOSE`, or any other field that names the expected outcome. This is by design.
 
-## Environment
-
-All `ada` commands must be prefixed with: `export ADA_AGENT_RPATH_SEARCH_PATHS="${ADA_BIN_DIR}/../lib"` before execution.
 
 ## Step 1. Decide Sampling Density
 

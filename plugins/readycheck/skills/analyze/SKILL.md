@@ -17,7 +17,6 @@ Analyze a captured ADA session using a voice-first workflow that extracts user o
 
 ```bash
 READYCHECK_PLUGIN_ROOT="$(${CLAUDE_PLUGIN_ROOT}/scripts/ensure_release.sh)"
-export ADA_AGENT_RPATH_SEARCH_PATHS="${ADA_LIB_DIR}"
 ```
 
 **IMPORTANT**: Always use the full path `${ADA_BIN_DIR}/ada` for commands to avoid conflicts with other `ada` binaries in PATH.
