@@ -1,6 +1,17 @@
 # ReadyCheck
 
-**ReadyCheck** makes debugging faster and clearer by capturing what happened and replaying it later.
+ReadyCheck is the **Human Perception Layer** for AI agents working on running software.
+
+It lets a human use the app naturally, say what feels wrong, and captures the surrounding evidence so an agent can connect that perception to what actually happened underneath.
+Instead of asking agents to guess from vague bug reports, isolated screenshots, or incomplete logs, ReadyCheck creates a tight, time-aligned evidence bundle they can summarize, search, and cite:
+
+- **Screen Capture**: what the user saw.
+- **Spoken Observations**: what the user noticed and said in the moment.
+- **Function Activity Records**: what the program actually did underneath.
+
+Together, these signals turn human review into agent-readable ground truth.
+
+![Explaining ReadyCheck](README.md.d/tracks.png "Timeline showing synchronized screen recording, voice waveform, and function trace logs aligned by a red playhead timestamp.")
 
 ## Get ReadyCheck
 
@@ -13,25 +24,13 @@ This installs the **ReadyCheck** plugin from the dedicated ReadyCheck marketplac
 The marketplace ships the lightweight ReadyCheck plugin source directly, and that
 plugin is pinned to a published GitHub release of the packaged macOS runtime.
 
-## Brief Introduction
-
-**ReadyCheck** is the Human Perception Layer between AI agents and the human beings.
-
-It's designed to give AI agents *evidence* (not guesses): a tight, time-aligned bundle they can summarize, search, and cite, including:
-
-- **Screen Capture**: Empowers the AI agents to see what you see.
-- **Spoken Observation**: Empowers the AI agents to hear your feedback.
-- **Function Activity Records**: Empowers the AI agents to know what happened in the program code.
-
-![Explaining ReadyCheck](README.md.d/tracks.png "Timeline showing synchronized screen recording, voice waveform, and function trace logs aligned by a red playhead timestamp.")
-
 ## Use ReadyCheck
 
 **Run and Analyze**
 
-Option A: Say "check my app" or "check my macOS app".
+Option A: Enter "check my app" or "check my macOS app" in Claude Code.
 
-OptionB: Run your app with `/check My app` or `/check My macOS app`.
+Option B: Enter `/check My app` or `/check My macOS app` in Claude Code.
 
 This builds, runs, captures, and automatically analyzes your app.
 
