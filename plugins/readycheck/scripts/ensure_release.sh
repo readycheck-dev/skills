@@ -12,7 +12,7 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PLUGIN_RELEASE_URL_FILE="$PLUGIN_ROOT/.claude-plugin/release-url"
 CACHE_ROOT="${READYCHECK_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/readycheck}"
 RUNTIMES_ROOT="$CACHE_ROOT/runtime"
-DEFAULT_ASSET_URL="https://github.com/readycheck-dev/ReadyCheck/releases/latest/download/readycheck-plugin-latest-macos.zip"
+DEFAULT_ASSET_URL="https://github.com/readycheck-dev/skills/releases/latest/download/readycheck-plugin-latest-macos.zip"
 
 if [[ -f "$PLUGIN_RELEASE_URL_FILE" ]]; then
     FILE_ASSET_URL="$(tr -d '\r' < "$PLUGIN_RELEASE_URL_FILE")"

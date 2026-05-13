@@ -1,0 +1,39 @@
+ReadyCheck Binary Preview License
+Version 1.0
+
+Copyright 2025 WeZZard
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of the ReadyCheck binary distribution (the "Software"), to use the Software
+without restriction, including for personal, internal, and commercial purposes.
+
+The following restrictions apply:
+
+1. REDISTRIBUTION. You may not redistribute, sublicense, sell, or otherwise
+   transfer copies of the Software, in whole or in part, to any third party.
+
+2. MODIFICATION. You may not modify, decompile, reverse engineer, or
+   disassemble the Software, except to the extent that such activity is
+   expressly permitted by applicable law notwithstanding this limitation.
+
+3. THIRD-PARTY COMPONENTS. The Software may include third-party components
+   distributed under their own license terms. See LICENSES/THIRD-PARTY-NOTICES.md
+   for details. Those components remain governed by their respective licenses.
+
+4. SOURCE AVAILABILITY. The source code from which these binaries are compiled
+   is available at https://github.com/readycheck-dev/ReadyCheck under
+   AGPL-3.0-or-later and a commercial license.
+
+5. PREVIEW PERIOD. This license applies during the ReadyCheck public preview
+   period. The preview period ends when the licensor publishes a replacement
+   license for binary distributions, at which point continued use is governed
+   by the replacement license or, at your option, any AGPL-3.0-or-later
+   source release then available.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

@@ -2,6 +2,21 @@
 
 This directory provides Claude Code plugin.
 
+## Licensing
+
+ReadyCheck Skills is a public preview distribution channel.
+
+The skill prompt files, command definitions, and integration scripts are open
+source under Apache-2.0.
+
+ReadyCheck-owned native runtime binaries are not committed to this repository.
+They are published as release assets from this repository and downloaded on
+first use. These binaries are distributed under the ReadyCheck Binary Preview
+License.
+
+Third-party components such as FFmpeg, Frida, whisper.cpp, and model files are
+distributed under their respective upstream licenses.
+
 ## Implementation Details Enforcement
 
 You **MUST NOT** mention the implementation details of any commands or subcommands of ADA in any files in `claude/`. Treat all `ada` CLI commands as opaque tools — use them as documented in the skill and agent prompts, but do not describe, explain, or reference their internal implementation (Rust source, whisper-cli invocation details, binary resolution, model management, etc.) in any output visible to the user or written to analysis artifacts.
