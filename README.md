@@ -13,6 +13,18 @@ This installs the **ReadyCheck** plugin from the dedicated ReadyCheck marketplac
 The marketplace ships the lightweight ReadyCheck plugin source directly, and that
 plugin is pinned to a published GitHub release of the packaged macOS runtime.
 
+## Brief Introduction
+
+**ReadyCheck** is the Human Perception Layer between AI agents and the human beings.
+
+It's designed to give AI agents *evidence* (not guesses): a tight, time-aligned bundle they can summarize, search, and cite, including:
+
+- **Screen Capture**: Empowers the AI agents to see what you see.
+- **Spoken Observation**: Empowers the AI agents to hear your feedback.
+- **Function Activity Records**: Empowers the AI agents to know what happened in the program code.
+
+![Explaining ReadyCheck](README.md.d/tracks.png "Timeline showing synchronized screen recording, voice waveform, and function trace logs aligned by a red playhead timestamp.")
+
 ## Use ReadyCheck
 
 **Run and Analyze**
