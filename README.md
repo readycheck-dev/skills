@@ -7,11 +7,11 @@ Instead of asking agents to guess from vague bug reports, isolated screenshots, 
 
 - **Screen Capture**: what the user saw.
 - **Spoken Observations**: what the user noticed and said in the moment.
-- **Function Activity Records**: what the program actually did underneath.
+- **Function Activities**: what the program actually did underneath.
 
 Together, these signals turn human review into agent-readable ground truth.
 
-![Explaining ReadyCheck](README.md.d/tracks.png "Timeline showing synchronized screen recording, voice waveform, and function trace logs aligned by a red playhead timestamp.")
+![Explaining ReadyCheck](README.md.d/tracks.png "Timeline showing Screen Capture, Function Activities, and Spoken Observations aligned to the same session.")
 
 ## Get ReadyCheck
 
@@ -26,7 +26,11 @@ plugin is pinned to a published GitHub release of the packaged macOS runtime.
 
 ## Use ReadyCheck
 
-**Run and Analyze**
+**Walkthrough Video:**
+
+[![9-minute walkthrough video](README.md.d/walkthrough-video-banner.png)](https://youtu.be/WTj7UkfVGZU)
+
+**Run and Analyze:**
 
 Option A: Enter "check my app" or "check my macOS app" in Claude Code.
 
@@ -34,13 +38,17 @@ Option B: Enter `/check My app` or `/check My macOS app` in Claude Code.
 
 This builds, runs, captures, and automatically analyzes your app.
 
-**Analyze Only**
+While the app is running, use it naturally and speak what feels wrong as you notice it, such as "this flicker feels wrong" or "that transition was too fast to read." ReadyCheck keeps those spoken observations aligned with the screen and runtime evidence for the agent.
+
+**Analyze Only:**
 
 Run standalone analysis on an existing session, creating a fix plan.
 
 ```shell
 /analyze [session_id]
 ```
+
+## Platform and Language Availabilities
 
 **Supported Platforms and Programming Languages**
 
