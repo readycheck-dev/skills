@@ -13,8 +13,6 @@ Together, these signals turn human review into agent-readable ground truth.
 
 ![Explaining ReadyCheck](README.md.d/tracks.png "Timeline showing Screen Capture, Function Activities, and Spoken Observations aligned to the same session.")
 
-![ReadyCheck evidence artifacts](README.md.d/example-output.png "ReadyCheck turns spoken observations, screen evidence, and runtime evidence into agent-readable analysis and a fix plan.")
-
 ## Get ReadyCheck
 
 ```sh
@@ -49,6 +47,10 @@ Run standalone analysis on an existing session, creating a fix plan.
 ```shell
 /analyze [session_id]
 ```
+
+## Key Features
+
+![ReadyCheck evidence artifacts](README.md.d/example-output.png "ReadyCheck turns spoken observations, screen evidence, and runtime evidence into agent-readable analysis and a fix plan.")
 
 ## Platform and Language Availabilities
 
