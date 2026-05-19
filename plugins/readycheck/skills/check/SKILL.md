@@ -26,9 +26,7 @@ Set variable **$ADA_LIB_DIR** to "${READYCHECK_PLUGIN_ROOT}/lib"
 **IMPORTANT**: Always use the full path `{{$ADA_BIN_DIR}}/ada` for commands to avoid conflicts with other `ada` binaries in PATH.
 `ensure_release.sh` automatically prefers a valid local `dist/` runtime when the plugin is being tested from a ReadyCheck checkout.
 
-## Workflow
-
-### MANDATORY: Step 1. Preflight Check
+## MANDATORY: Step 1. Preflight Check
 
 **If $PREFLIGHT_CHECK is set to 1, skip to Step 2.**
 
@@ -49,26 +47,41 @@ Parse the JSON output. Check all fields are `ok: true`.
 - Set `$PREFLIGHT_CHECK = 1`
 - Continue to Step 2
 
-### MANDATORY: Step 2. Project Detection
+## MANDATORY: Step 2. Project Detection
 
-You ***MUST*** explore the project to find the app to run and the build system building it.
+You **MUST** explore the project to find the app to run, the build system building it, and the launch arguments required to run it.
 
-### MANDATORY: Step 3. Build (if applicable)
+Set **$LAUNCH_ARGS** to the launch arguments string (empty string if none required).
+
+**Locate the binary and build system:**
+
+You **MUST** identify the build system (Xcode, SPM, CMake, Cargo, etc.) and the path to the built binary.
+
+**Detect launch arguments:**
+
+You **MUST** search for launch arguments in the following sources, in priority order:
+
+1. **Xcode scheme files** (`.xcscheme`) — extract enabled `CommandLineArgument` entries from `<LaunchAction>`. See **Appendix A** for search paths and extraction rules.
+2. **README / documentation** — look for documented run commands.
+3. **Binary help output** — if no scheme or docs exist, run the binary with `--help` or no args and check for usage text.
+
+## MANDATORY: Step 3. Build (if applicable)
 
 You MAY use the app's build system to build the app.
 
-### MANDATORY: Step 4. Start Capture (Background)
+## MANDATORY: Step 4. Start Capture (Background)
 
 Start capturing with `background: true` and title "Start ReadyCheck capture session":
 
 <example>
 Bash(
-  command: export ADA_AGENT_RPATH_SEARCH_PATHS="{{$ADA_LIB_DIR}}" "${{ADA_BIN_DIR}}/ada capture start <binary_path>",
+  command: export ADA_AGENT_RPATH_SEARCH_PATHS="{{$ADA_LIB_DIR}}" "${{ADA_BIN_DIR}}/ada capture start <binary_path> -- $LAUNCH_ARGS",
   background: true
 )
 </example>
 
-You **MUST** substitute **$ADA_LIB_DIR** and **$ADA_BIN_DIR** in the invocation command with the variable you got in **Step 1. Preflight Check**.
+You **MUST** substitute **$ADA_LIB_DIR** and **$ADA_BIN_DIR** in the invocation command with the variable you got in **Preflight Check**.
+You **MUST** substitute **$LAUNCH_ARGS** with the value detected in **Detect launch arguments**, and omit `-- $LAUNCH_ARGS` entirely when **$LAUNCH_ARGS** is empty.
 You **MUST** save the returned task ID as **$CAPTURE_TASK_ID**.
 
 **Report to user:**
@@ -78,7 +91,7 @@ You **MUST** save the returned task ID as **$CAPTURE_TASK_ID**.
 > Interact with your app. When you quit the app, capture stops automatically.
 >
 
-### MANDATORY: Step 5. Wait for Capture Completion
+## MANDATORY: Step 5. Wait for Capture Completion
 
 Wait for the user to finish interacting with their app. When the user indicates they are done, collect the capture output:
 
@@ -162,7 +175,7 @@ You **MUST NOT** execute this until the capture is failed.
 
    **If user declines:** Stop.
 
-### MANDATORY: Step 6. Auto-Analyze
+## MANDATORY: Step 6. Auto-Analyze
 
 Automatically invoke the `/readycheck:analyze` skill:
 
@@ -178,3 +191,47 @@ Follow the analyze skill workflow from there.
 - **Binary not found**: Guide user to specify path manually
 - **Capture failure (entitlement issue)**: Diagnose missing entitlements on the target binary, offer re-signing with user consent
 - **Capture failure (other)**: Show error output, suggest re-running
+
+## Appendix A: Xcode Scheme Launch Argument Extraction
+
+**Search paths:**
+
+You **MUST** search these paths (relative to the project root) for `.xcscheme` files, excluding `.build/` and `DerivedData/` directories:
+- `.swiftpm/xcode/xcshareddata/xcschemes/*.xcscheme`
+- `*.xcodeproj/xcshareddata/xcschemes/*.xcscheme`
+- `*.xcworkspace/../*.xcodeproj/xcshareddata/xcschemes/*.xcscheme`
+
+**Extraction rules:**
+
+You **MUST** parse `<LaunchAction>` > `<CommandLineArguments>` > `<CommandLineArgument>` elements.
+You **MUST** include only entries where `isEnabled="YES"`.
+You **MUST** concatenate the `argument` attribute values in document order, space-separated.
+You **MUST** skip entries where `isEnabled="NO"`.
+You **MUST** set **$LAUNCH_ARGS** to empty string if `<CommandLineArguments>` is absent from `<LaunchAction>`.
+
+<example>
+
+Given this `.xcscheme` fragment inside `<LaunchAction>`:
+
+```xml
+<CommandLineArguments>
+   <CommandLineArgument argument="--arg1" isEnabled="YES"/>
+   <CommandLineArgument argument="--arg2" isEnabled="YES"/>
+   <CommandLineArgument argument="--arg3" isEnabled="NO"/>
+</CommandLineArguments>
+```
+
+Set **$LAUNCH_ARGS** to: `--arg1 --arg2`
+
+(`--arg3` is excluded because `isEnabled="NO"`)
+
+</example>
+
+<example>
+
+Given a `<LaunchAction>` with no `<CommandLineArguments>` element (typical for GUI apps):
+
+Set **$LAUNCH_ARGS** to: (empty string)
+
+</example>
+
